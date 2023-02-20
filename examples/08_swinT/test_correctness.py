@@ -115,9 +115,15 @@ def build_swinT():
     print(out[1].shape)
     print(out[2].shape)
 
+def try_compile():
+    swint_ait = compile_swinT(
+        model_name="swin_tiny_patch4_window7_224",
+        batch_size=6,
+        use_fp16_acc=True,
+    )
+
 class VITVerification(unittest.TestCase):
     def test_vit(self):
-        swint_pt = build_swinT().half()
 
         swint_ait = compile_swinT(
             model_name="swin_tiny_patch4_window7_224",
@@ -125,6 +131,7 @@ class VITVerification(unittest.TestCase):
             use_fp16_acc=True,
         )
 
+        swint_pt = build_swinT().half()
         # prepare params
         params_pt = swint_pt.named_parameters()
         params_ait = {}
@@ -168,11 +175,12 @@ class VITVerification(unittest.TestCase):
                 * 255
             )
             x_ait = x_pt.permute(0, 2, 3, 1).contiguous()
-            y_pt = swint_pt.patch_embed(x_pt)[0]
+            y_pt = swint_pt(x_pt)[0]
             y_ait = torch.empty_like(y_pt)
             swint_ait.run_with_tensors([x_ait], [y_ait])
             torch.testing.assert_close(y_ait, y_pt, atol=1e-1, rtol=1e-1)
 
 
 if __name__ == "__main__":
-    unittest.main()
+    # unittest.main()
+    try_compile()
